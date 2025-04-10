@@ -9,6 +9,8 @@
 
 #define IDC_BUTTON 1001
 #define IDC_STATIC 1002
+#define IDC_COMBOBOX 1003
+#define IDC_STATIC_DESC 1004
 
 BOOL SetSystemProxy(BOOL enable, LPCTSTR proxyServer)
 {
@@ -47,43 +49,77 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     static HWND hButton;
     static HWND hStatic;
+    static HWND hCombo;
+    static HWND hDesc;
+    static HFONT hFont;
     static BOOL proxyEnabled = FALSE;
 
     switch (message)
     {
     case WM_CREATE:
     {
+        // 创建字体
+        hFont = CreateFont(
+            18,                    // 字体高度
+            0,
+            0,
+            0,
+            FW_NORMAL,
+            FALSE,
+            FALSE,
+            FALSE,
+            DEFAULT_CHARSET,
+            OUT_DEFAULT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY,
+            DEFAULT_PITCH | FF_SWISS,
+            _T("Microsoft YaHei")
+        );
+
+        // 创建组合框
+        hCombo = CreateWindow(_T("COMBOBOX"), NULL,
+            WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST,
+            0, 5, 160, 90,  // 调整高度以适应下拉列表
+            hWnd, (HMENU)IDC_COMBOBOX,
+            ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+
+        SendMessage(hCombo, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+        // 添加端口选项
+        SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)_T("10001"));
+        SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)_T("10002"));
+        SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)_T("10003"));
+        SendMessage(hCombo, CB_SETCURSEL, 0, 0); // 默认选中第一个
         hButton = CreateWindow(
             _T("BUTTON"),
             _T("启用代理"),
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_FLAT,
-            0, 5, 160, 40,  // 按钮pos
+            0, 25, 160, 40,  // 按钮pos
             hWnd,
             (HMENU)IDC_BUTTON,
             ((LPCREATESTRUCT)lParam)->hInstance,
             NULL);
-
-        HFONT hFont = CreateFont(14, 0, 0, 0, FW_LIGHT, FALSE, FALSE, 0, DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, _T("Segoe UI"));
         SendMessage(hButton, WM_SETFONT, (WPARAM)hFont, TRUE);
-        DeleteObject(hFont);
+
+        hDesc = CreateWindow(
+            _T("STATIC"), _T("此连接较为稳定，速度适中"),
+            WS_CHILD | WS_VISIBLE | SS_CENTER,
+            0, 65, 160, 40, 
+            hWnd, (HMENU)IDC_STATIC_DESC,
+            ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+        SendMessage(hDesc, WM_SETFONT, (WPARAM)hFont, TRUE);
 
         hStatic = CreateWindow(
             _T("STATIC"),
             _T("power by yuebi"),
             WS_CHILD | WS_VISIBLE | SS_CENTER,
-            0, 60, 160, 20,  // 静态文本pos
+            0, 105, 160, 20, 
             hWnd,
             (HMENU)IDC_STATIC,
             ((LPCREATESTRUCT)lParam)->hInstance,
             NULL);
+        SendMessage(hStatic, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        HFONT hFontStatic = CreateFont(10, 0, 0, 0, FW_THIN, FALSE, FALSE, 0, DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, _T("Segoe UI"));
-        SendMessage(hStatic, WM_SETFONT, (WPARAM)hFontStatic, TRUE);
-        DeleteObject(hFontStatic);
-
-        SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(0xFFFFFF));
     }
     break;
 
@@ -99,11 +135,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         if (LOWORD(wParam) == IDC_BUTTON)
         {
+            TCHAR szPort[6] = { 0 };
+            TCHAR szProxy[32] = _T("10.88.202.71:");
+
+            // 获取当前选中的端口
+            int nIndex = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
+            SendMessage(hCombo, CB_GETLBTEXT, nIndex, (LPARAM)szPort);
+
+            _tcscat_s(szProxy, szPort); // 拼接完整代理地址
+
             proxyEnabled = !proxyEnabled;
-            if (SetSystemProxy(proxyEnabled, _T("10.88.202.71:10001")))
+            if (SetSystemProxy(proxyEnabled, szProxy))
             {
                 SetWindowText(hButton, proxyEnabled ? _T("禁用代理") : _T("启用代理"));
             }
+        }
+        else if (LOWORD(wParam) == IDC_COMBOBOX && HIWORD(wParam) == CBN_SELCHANGE) {
+            TCHAR szPort[6] = { 0 };
+            int nIndex = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
+            SendMessage(hCombo, CB_GETLBTEXT, nIndex, (LPARAM)szPort);
+
+            if (_tcscmp(szPort, _T("10001")) == 0) {
+                SetWindowText(hDesc, _T("此连接较为稳定，速度适中"));
+            }
+            else if (_tcscmp(szPort, _T("10002")) == 0) {
+                SetWindowText(hDesc, _T("此连接拥有外网访问权限"));
+            }
+            else if (_tcscmp(szPort, _T("10003")) == 0) {
+                SetWindowText(hDesc, _T("此速度极快的代理，但有时不可用"));
+            }
+        }
+        break;
+
+    case WM_SETCURSOR:
+        if (LOWORD(lParam) == HTCLIENT && ((HWND)wParam) == hStatic) {
+            SetCursor(LoadCursor(NULL, IDC_HAND));
+            return TRUE;
         }
         break;
 
@@ -138,7 +205,7 @@ int WINAPI WinMain(
         szClassName,
         _T("ヾ(≧▽≦*)o"),
         WS_OVERLAPPEDWINDOW & ~WS_SIZEBOX & ~WS_DLGFRAME & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX & ~WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 175, 115,  
+        CW_USEDEFAULT, CW_USEDEFAULT, 175, 160,
         NULL,
         NULL,
         hInstance,
