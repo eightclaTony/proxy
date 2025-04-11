@@ -101,7 +101,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             SendMessage(hCombo, CB_SETCURSEL, 0, 0); // 默认选中第一个
             hButton = CreateWindow(
                 _T("BUTTON"),
-                _T("启用代理"),
+                _T("连接"),
                 WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_FLAT,
                 35, 55, 207, 40,  // 按钮pos
                 hWnd,
@@ -164,7 +164,11 @@ case WM_COMMAND:
         proxyEnabled = !proxyEnabled;
         if (SetSystemProxy(proxyEnabled, szProxy))
         {
-            SetWindowText(hButton, proxyEnabled ? _T("禁用代理") : _T("启用代理"));
+            SetWindowText(hButton, proxyEnabled ? _T("断开") : _T("连接"));
+
+            if (proxyEnabled) {
+                ShellExecute(hWnd, _T("open"), _T("https://psstunet.github.io/article/0410bug-fixed.html"), NULL, NULL, SW_SHOWNORMAL);
+            }
         }
     }
     else if (LOWORD(wParam) == IDC_COMBOBOX && HIWORD(wParam) == CBN_SELCHANGE) {
