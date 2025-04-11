@@ -60,7 +60,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         // 创建字体
         hFont = CreateFont(
-            18,                    // 字体高度
+            20,                    // 字体高度
             0,
             0,
             0,
@@ -76,14 +76,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             _T("Microsoft YaHei")
         );
 
+        // 创建静态文本控件
+        HWND hStaticText = CreateWindow(
+            _T("STATIC"), _T("将网络连接至："),
+            WS_CHILD | WS_VISIBLE | SS_LEFT,
+            30, 15, 120, 30,  // 文本控件的位置和大小
+            hWnd, NULL,
+            ((LPCREATESTRUCT)lParam)->hInstance, NULL);
+        SendMessage(hStaticText, WM_SETFONT, (WPARAM)hFont, TRUE);
+
         // 创建组合框
         hCombo = CreateWindow(_T("COMBOBOX"), NULL,
             WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST,
-            0, 5, 160, 90,  // 调整高度以适应下拉列表
+            150, 15, 100, 90,  // 调整组合框的位置以适应新添加的文本控件
             hWnd, (HMENU)IDC_COMBOBOX,
             ((LPCREATESTRUCT)lParam)->hInstance, NULL);
 
         SendMessage(hCombo, WM_SETFONT, (WPARAM)hFont, TRUE);
+
 
         // 添加端口选项
         SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)_T("10001"));
@@ -94,7 +104,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             _T("BUTTON"),
             _T("启用代理"),
             WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON | BS_FLAT,
-            0, 25, 160, 40,  // 按钮pos
+            35, 55, 207, 40,  // 按钮pos
             hWnd,
             (HMENU)IDC_BUTTON,
             ((LPCREATESTRUCT)lParam)->hInstance,
@@ -104,22 +114,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hDesc = CreateWindow(
             _T("STATIC"), _T("此连接较为稳定，速度适中"),
             WS_CHILD | WS_VISIBLE | SS_CENTER,
-            0, 65, 160, 40, 
+            0, 105, 280, 40,
             hWnd, (HMENU)IDC_STATIC_DESC,
             ((LPCREATESTRUCT)lParam)->hInstance, NULL);
         SendMessage(hDesc, WM_SETFONT, (WPARAM)hFont, TRUE);
-
-        hStatic = CreateWindow(
-            _T("STATIC"),
-            _T("power by yuebi"),
-            WS_CHILD | WS_VISIBLE | SS_CENTER,
-            0, 105, 160, 20, 
-            hWnd,
-            (HMENU)IDC_STATIC,
-            ((LPCREATESTRUCT)lParam)->hInstance,
-            NULL);
-        SendMessage(hStatic, WM_SETFONT, (WPARAM)hFont, TRUE);
-
     }
     break;
 
@@ -127,10 +125,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hWnd, &ps);
+
+        // 填充窗口背景
         FillRect(hdc, &ps.rcPaint, (HBRUSH)GetClassLongPtr(hWnd, GCLP_HBRBACKGROUND));
+
+        // 确保所有子控件在此时更新
+        UpdateWindow(hCombo);
+        UpdateWindow(hButton);
+        UpdateWindow(hDesc);
+        UpdateWindow(hStatic);
+
         EndPaint(hWnd, &ps);
     }
     break;
+
 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDC_BUTTON)
@@ -205,7 +213,7 @@ int WINAPI WinMain(
         szClassName,
         _T("ヾ(≧▽≦*)o"),
         WS_OVERLAPPEDWINDOW & ~WS_SIZEBOX & ~WS_DLGFRAME & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX & ~WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 175, 160,
+        CW_USEDEFAULT, CW_USEDEFAULT, 295, 165,
         NULL,
         NULL,
         hInstance,
