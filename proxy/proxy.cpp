@@ -167,7 +167,7 @@ case WM_COMMAND:
             SetWindowText(hButton, proxyEnabled ? _T("断开") : _T("连接"));
 
             if (proxyEnabled) {
-                ShellExecute(hWnd, _T("open"), _T("https://psstunet.github.io/article/0410bug-fixed.html"), NULL, NULL, SW_SHOWNORMAL);
+                ShellExecute(hWnd, _T("open"), _T("https://eightclatony.github.io/proxy/"), NULL, NULL, SW_SHOWNORMAL);
             }
         }
     }
